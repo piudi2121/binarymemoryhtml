@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Memorização Binária</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				margin: 0;
+				background: #040004;
+				color: white;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				min-height: 100vh;
+			}
+			.hidden {
+				display: none;
+			}
+			.container {
+				width: 90%;
+				max-width: 600px;
+				padding: 20px;
+				text-align: center;
+			}
+			button {
+				background: #413d3d;
+				border: none;
+				color: white;
+				padding: 15px 25px;
+				border-radius: 10px;
+				font-size: 18px;
+				margin: 10px 0;
+				width: 100%;
+				transition: 0.25s;
+			}
+			button:hover {
+				background: #4b000f;
+				color: #fa023c;
+			}
+			.matrix {
+				font-family: monospace;
+				text-align: center;
+				margin: 25px 0;
+				font-size: 20px;
+				line-height: 1.8;
+			}
+			textarea {
+				width: 80%;
+				height: 250px;
+				font-family: monospace;
+				font-size: 18px;
+				padding: 10px;
+				border-radius: 8px;
+				resize: vertical;
+				background: #413d3d;
+				color: white;
+				border: 2px solid #c8ff00;
+			}
+			textarea:focus {
+				outline: none;
+				border-color: #fa023c;
+			}
+			.result-box {
+				background: #413d3d;
+				padding: 15px;
+				border-radius: 10px;
+				margin-top: 20px;
+			}
+			.correct {
+				color: #c8ff00;
+			}
+			.wrong {
+				color: #fa023c;
+			}
+			input[type="number"] {
+				width: 60%;
+				padding: 10px;
+				margin-top: 10px;
+				border-radius: 8px;
+				border: 2px solid #c8ff00;
+				background: #413d3d;
+				color: white;
+				font-size: 16px;
+			}
+			input[type="number"]:focus {
+				outline: none;
+				border-color: #fa023c;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="start-screen" class="container">
+			<h2>Memorização Binária</h2>
+			<p>Escolha o tempo de memorização:</p>
+			<button onclick="startSession(1)">1 minuto</button>
+			<button onclick="startSession(5)">5 minutos</button>
+			<p>Ou insira um tempo personalizado (em segundos):</p>
+			<input type="number" id="custom-time" min="5" placeholder="Ex: 30" />
+			<button onclick="customTime()">Usar tempo personalizado</button>
+		</div>
+
+		<div id="memorize-screen" class="container hidden">
+			<h2>Memorize as matrizes</h2>
+			<div id="matrix-list"></div>
+		</div>
+
+		<div id="recall-screen" class="container hidden">
+			<h2>Digite os binários lembrados</h2>
+			<textarea
+				id="recall-input"
+				placeholder="Digite os 0s e 1s aqui..."
+			></textarea>
+			<button onclick="showResults()">Ver resultado</button>
+		</div>
+
+		<div id="result-screen" class="container hidden">
+			<h2>Resultado</h2>
+			<p id="score"></p>
+			<div id="comparison" class="result-box"></div>
+			<button onclick="location.reload()">Recomeçar</button>
+		</div>
+
+		<script>
+			let matrices = [];
+
+			function generateMatrix() {
+				let matrix = [];
+				for (let i = 0; i < 3; i++) {
+					let row = "";
+					for (let j = 0; j < 3; j++) {
+						row += Math.random() < 0.5 ? "0" : "1";
+					}
+					matrix.push(row);
+				}
+				return matrix;
+			}
+
+			function startSession(minutes) {
+				const seconds = minutes * 60;
+				beginMemorization(seconds);
+			}
+
+			function customTime() {
+				const customSeconds = parseInt(
+					document.getElementById("custom-time").value
+				);
+				beginMemorization(customSeconds);
+			}
+
+			function beginMemorization(seconds) {
+				document.getElementById("start-screen").classList.add("hidden");
+				document.getElementById("memorize-screen").classList.remove("hidden");
+
+				const matrixList = document.getElementById("matrix-list");
+				matrixList.innerHTML = "";
+
+				// Gera 30 matrizes (ajustável)
+				matrices = Array.from({ length: 30 }, generateMatrix);
+
+				matrices.forEach((m) => {
+					const div = document.createElement("div");
+					div.className = "matrix";
+					div.innerHTML = m.join("<br>");
+					matrixList.appendChild(div);
+				});
+
+				setTimeout(() => {
+					document.getElementById("memorize-screen").classList.add("hidden");
+					document.getElementById("recall-screen").classList.remove("hidden");
+				}, seconds * 1000);
+			}
+
+			// --- Autoformatação do input ---
+			const recallInput = document.getElementById("recall-input");
+			recallInput.addEventListener("input", (e) => {
+				let text = e.target.value.replace(/[^01]/g, "");
+				let formatted = "";
+				for (let i = 0; i < text.length; i++) {
+					formatted += text[i];
+					if ((i + 1) % 3 === 0 && i !== text.length - 1) formatted += "\n";
+				}
+				e.target.value = formatted;
+			});
+
+			function showResults() {
+				const userAnswer = recallInput.value.replace(/\s+/g, "");
+				const correct = matrices.flat().join("");
+				const compareLength = Math.min(userAnswer.length, correct.length);
+
+				let errors = 0;
+				let comparisonHTML = "";
+
+				for (let i = 0; i < compareLength; i++) {
+					const correctDigit = correct[i];
+					const userDigit = userAnswer[i];
+					const isWrong = correctDigit !== userDigit;
+					if (isWrong) errors++;
+					comparisonHTML += `
+      <div>
+        <span class="${
+					isWrong ? "wrong" : "correct"
+				}">Correto: ${correctDigit}</span> | 
+        <span class="${isWrong ? "wrong" : "correct"}">Você: ${userDigit}</span>
+      </div>`;
+				}
+
+				document.getElementById("recall-screen").classList.add("hidden");
+				document.getElementById("result-screen").classList.remove("hidden");
+
+				document.getElementById("score").textContent = `Você digitou ${
+					userAnswer.length
+				} dígitos. Acertou ${compareLength - errors} e errou ${errors}.`;
+				document.getElementById("comparison").innerHTML = comparisonHTML;
+			}
+		</script>
+	</body>
+</html>
